@@ -1,4 +1,4 @@
-from main import app
+from run import app
 import json
 
 def test_route():
