@@ -1,27 +1,39 @@
 from run import app
 import json
+import shap
+import numpy as np
 
-def test_route():
+def test_shap():
     
     response = app.test_client().get('/')
+    
+    assert response.status_code == 200
 
-    assert b'OK' == response.data 
+    assert len(response.data) >1
+    
+def test_distribution():
+    
+    response = app.test_client().post('/distribution', data = "Crédits clos".encode("latin1"))
+    
+    assert response.status_code == 200
+
+    assert len(response.get_json()[0]) >1
+    
+    assert len(response.get_json()[1]) >1
 
 def test_predict_api():
     
     data = {
         
-       'EXT_SOURCE_2' : 0.44600,
-       'DAYS_EMPLOYED' : -2603,
-       'AMT_GOODS_PRICE' : 1035000.0,
-       'number_of_previous_Active_credits' : 9.0,
-       'number_of_previous_Closed_credits' : 4.0,
-       'NAME_EDUCATION_TYPE_Higher education' : False,
-       'number_of_previous_Refused_credits' : 0.0,
-       'percent_month_installments_late_moyen' : 0.000000,
-       'AMT_CREDIT' : 1035000.0,
-       'AMT_ANNUITY': 27432.0
-       
+       'Notation bancaire' : 0.44600,
+       'Âge' : 36.00,
+       'Crédits en cours' : 9.0,
+       'Prix biens consommation' : 1035000.0,
+       'Crédits clos' : 4.0,
+       'Enseignement supérieur' : False,
+       'Crédits refusés' : 0.0,
+       'Mois avec retard de paiement' : 0.000000,
+       'Montant total prêt' : 1035000.0       
         } 
     
     json_data = json.dumps(data)
@@ -38,6 +50,15 @@ def test_predict_api():
     
     json_response_shap = response.get_json()[1]
     
-    assert len(json_response_shap[0]) == 10
+    shap_values_dict_reconstructed = json.loads(json_response_shap)
+
+    shap_values_reconstructed = shap.Explanation(
+        values=np.array(shap_values_dict_reconstructed['values']),
+        base_values=np.array(shap_values_dict_reconstructed['base_values']),
+        data=np.array(shap_values_dict_reconstructed['data']),
+        feature_names=shap_values_dict_reconstructed['feature_names']
+    )[0]
+    
+    assert len(shap_values_reconstructed) == 9
     
     
